@@ -1,0 +1,42 @@
+version: '2'
+services:
+  dynamodb:
+    image: marcosnils/dynamodb-local
+    command: [ -inMemory ]
+    ports:
+      - 8000:8000
+
+  base:
+    build: "./"
+    working_dir: /usr/src/app
+    expose:
+      - "8080"
+    ports:
+      - "8080:8080"
+    environment:
+      - EXPRESS_HOST=0.0.0.0
+      - EXPRESS_PORT=8080
+      - DYNAMODB_TABLE=links
+
+  api:
+    extends:
+      service: base
+    command: npm start
+    environment:
+      - NODE_ENV=production
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+  test:
+    extends:
+      service: base
+    command: npm run test
+    links:
+      - dynamodb:dynamodb.dev
+    environment:
+      - NODE_ENV=test
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - DYNAMODB_ENDPOINT=http://dynamodb.dev:8000
